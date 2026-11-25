@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "leakhound"
+version = "1.0.0"
+description = "Find leaked credentials in source trees and git history, with SARIF output and a pre-commit hook"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Sparsh Khanal" }]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+leakhound = "leakhound.cli:main"
+
+[tool.setuptools]
+packages = ["leakhound"]
+
+[tool.ruff]
+line-length = 160
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["UP007", "UP045"]

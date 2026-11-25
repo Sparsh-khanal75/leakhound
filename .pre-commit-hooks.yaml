@@ -1,0 +1,6 @@
+- id: leakhound
+  name: leakhound (block secrets in staged changes)
+  entry: leakhound --staged
+  language: python
+  pass_filenames: false
+  always_run: true
