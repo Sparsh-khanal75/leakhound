@@ -150,3 +150,14 @@ def test_baseline_and_sarif(tmp_path: Path, capsys):
     assert sarif["version"] == "2.1.0"
     assert [r["ruleId"] for r in results] == ["private-key"]
     assert results[0]["locations"][0]["physicalLocation"]["artifactLocation"]["uri"] == "new.py"
+
+
+def test_html_report_is_redacted(tmp_path):
+    (tmp_path / "settings.py").write_text(f'AWS_ACCESS_KEY_ID = "{AWS_ID}"\nSTRIPE = "{STRIPE}"\n')
+    out = tmp_path / "report.html"
+    assert main([str(tmp_path), "--format", "html", "-o", str(out)]) == 1
+    page = out.read_text(encoding="utf-8")
+    assert "Secret scan report" in page
+    assert "AWS access key ID" in page
+    assert AWS_ID not in page and STRIPE not in page  # never leak the secret itself
+    assert AWS_ID[:4] + "*" in page
