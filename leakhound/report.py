@@ -1,8 +1,9 @@
-"""Text, JSON and SARIF output."""
+"""Text, JSON, SARIF and HTML output."""
 
 from __future__ import annotations
 
 import json
+from collections import Counter
 
 from . import __version__
 from .rules import RULES
@@ -58,3 +59,43 @@ def sarif(findings: list[Finding]) -> str:
         "runs": [{"tool": {"driver": {"name": "leakhound", "version": __version__, "rules": rules}}, "results": results}],
     }
     return json.dumps(doc, indent=2)
+
+
+def html(findings: list[Finding], target: str = ".") -> str:
+    """Self-contained HTML dashboard. Secrets are always redacted."""
+    from .html_report import Report, render
+
+    ordered = sorted(findings, key=lambda f: (SEVERITY_ORDER[f.severity], f.path, f.line))
+    crit = sum(f.severity == "critical" for f in findings)
+    return render(
+        Report(
+            tool="leakhound",
+            title="Secret scan report",
+            subtitle="Leaked credentials in files and git history. Values are redacted: rotate anything listed here.",
+            meta={"target": target, "rules": len(RULES)},
+            kpis=[
+                ("secrets found", len(findings), "bad" if findings else "good"),
+                ("critical", crit, "bad" if crit else "good"),
+                ("files affected", len({f.path for f in findings}), "warn"),
+                ("commits affected", len({f.commit for f in findings if f.commit}), "warn"),
+                ("authors", len({f.author for f in findings if f.author}), "acc"),
+            ],
+            charts=[
+                ("Secrets by type", Counter(f.name for f in findings).most_common(8)),
+                ("Secrets by file", Counter(f.path for f in findings).most_common(8)),
+            ],
+            columns=["type", "location", "commit", "redacted", "fingerprint"],
+            rows=[
+                {
+                    "severity": f.severity,
+                    "type": f.name,
+                    "location": f"{f.path}:{f.line}",
+                    "commit": f"{f.commit} ({f.author})" if f.commit else "working tree",
+                    "redacted": f.redacted,
+                    "fingerprint": f.fingerprint,
+                }
+                for f in ordered
+            ],
+            empty_message="No secrets found.",
+        )
+    )

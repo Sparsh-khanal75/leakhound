@@ -18,7 +18,7 @@ def build_parser() -> argparse.ArgumentParser:
     mode = p.add_mutually_exclusive_group()
     mode.add_argument("--history", action="store_true", help="scan every commit on every branch, not just current files")
     mode.add_argument("--staged", action="store_true", help="scan staged changes only (pre-commit hook)")
-    p.add_argument("--format", choices=["text", "json", "sarif"], default="text")
+    p.add_argument("--format", choices=["text", "json", "sarif", "html"], default="text")
     p.add_argument("-o", "--output", help="write the report to a file instead of stdout")
     p.add_argument("--baseline", help="JSON file of accepted fingerprints; matching findings are ignored")
     p.add_argument("--update-baseline", action="store_true", help="write current findings to --baseline and exit 0")
@@ -47,7 +47,10 @@ def main(argv: list[str] | None = None) -> int:
         accepted = set(json.loads(Path(args.baseline).read_text()))
         findings = [f for f in findings if f.fingerprint not in accepted]
 
-    out = {"text": report.text, "sarif": report.sarif}.get(args.format, lambda fs: report.as_json(fs, args.show_secrets))(findings)
+    if args.format == "html":
+        out = report.html(findings, str(root))
+    else:
+        out = {"text": report.text, "sarif": report.sarif}.get(args.format, lambda fs: report.as_json(fs, args.show_secrets))(findings)
     if args.output:
         Path(args.output).write_text(out + "\n")
     else:
