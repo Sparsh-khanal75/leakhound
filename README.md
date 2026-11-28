@@ -20,6 +20,16 @@ MEDIUM   Hard-coded secret           settings.py:2  (commit 662464c54f43 by Dev)
 
 The GitHub token above was removed in a later commit, so a normal scan of the working tree is clean. `--history` still finds it, along with the commit and author that introduced it.
 
+## Screenshots
+
+These come from `python examples/make_demo_repo.py`, which builds a throwaway git repo with planted fake credentials. One of them was committed and then deleted, which `--history` still catches.
+
+![leakhound terminal output scanning git history](docs/screenshots/terminal.png)
+
+**HTML report (`--format html`):** a self-contained dashboard. Secrets are always redacted, so the report is safe to share.
+
+![leakhound HTML dashboard](docs/screenshots/html-report.png)
+
 ## What it detects
 
 | Kind | Rules |
@@ -46,6 +56,7 @@ leakhound                               # scan the current directory
 leakhound path/to/repo --history        # every commit on every branch
 leakhound --format sarif -o out.sarif   # for GitHub code scanning
 leakhound --format json                 # for a SIEM or a script
+leakhound --history --format html -o report.html   # self-contained HTML dashboard (values redacted)
 ```
 
 Exit code `1` when anything is found, so it fails a build.
